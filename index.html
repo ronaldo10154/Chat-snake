@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#080d18">
+<title>CHAT SNAKE — Versão 5</title>
+<style>
+:root{--bg:#080d18;--panel:#111a2b;--panel2:#172238;--line:#263650;--text:#edf4ff;--muted:#91a2bc;--green:#34d399;--red:#fb7185;--gold:#fbbf24;--blue:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#14213a 0,#080d18 48%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;min-height:100vh}
+.app{max-width:1100px;margin:auto;padding:12px;display:grid;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.brand{font-size:clamp(22px,5vw,34px);font-weight:1000;letter-spacing:2px}.brand span{color:var(--green)}
+.status{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:7px 10px;border-radius:999px}
+.hud{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat,.panel,.game-wrap,.controls{background:linear-gradient(145deg,#121d30,#0e1727);border:1px solid var(--line);border-radius:15px;padding:10px;min-width:0}
+.stat small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat strong{font-size:clamp(20px,4vw,29px);font-weight:900}
+.level strong{color:var(--gold)}
+.scoreboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.score-card{position:relative;overflow:hidden;border-radius:15px;padding:12px 10px;text-align:center;border:1px solid;box-shadow:0 7px 22px #0005}
+.score-card:before{content:"";position:absolute;inset:0;opacity:.17;background:linear-gradient(135deg,#fff,transparent 58%);pointer-events:none}
+.score-card.win{border-color:#10b981;background:linear-gradient(145deg,#064e3b,#052e2b 70%,#071b20)}
+.score-card.loss{border-color:#f43f5e;background:linear-gradient(145deg,#881337,#4c0519 70%,#230713)}
+.score-card small{display:block;font-size:11px;letter-spacing:2px;font-weight:1000;color:#eafcf5}
+.score-card.loss small{color:#ffe4e9}
+.score-card strong{display:block;font-size:clamp(28px,5vw,42px);line-height:1.12;font-weight:1000;text-shadow:0 3px 14px #0008}
+.score-card.win strong{color:#6ee7b7}.score-card.loss strong{color:#fda4af}
+.score-card .score-icon{font-size:16px;margin-right:4px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:12px;align-items:start}
+.game-wrap{padding:10px}
+.game-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.game-top strong{font-size:14px;letter-spacing:1px}
+#stateLabel{font-size:11px;color:var(--muted);text-align:right}
+.canvas-box{position:relative;width:100%;max-width:680px;margin:auto;aspect-ratio:1/1;background:#07101d;border-radius:12px;overflow:hidden;border:1px solid #263650}
+canvas{width:100%;height:100%;display:block}
+.overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;background:#050b16d9;padding:18px}
+.overlay.show{display:flex}
+.overlay-card{max-width:320px;background:#111d30;border:1px solid #3a4e6d;border-radius:18px;padding:18px;box-shadow:0 15px 60px #0009}
+.overlay h2{margin:0 0 6px;font-size:25px}.overlay p{margin:5px 0;color:#c5d2e5}
+.countdown{font-size:46px;font-weight:1000;color:var(--gold);line-height:1.2}
+.side{display:grid;gap:10px}
+.panel h3{font-size:13px;letter-spacing:.7px;margin:0 0 8px}
+.panel.help h3{color:var(--green)}.panel.harm h3{color:var(--red)}
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;align-items:end;margin:8px 0}
+.podium-item{text-align:center;min-width:0}
+.podium-item .medal{font-size:22px}
+.podium-item .name{font-size:10px;font-weight:800;overflow-wrap:anywhere;min-height:28px}
+.podium-item .bar{border-radius:7px 7px 2px 2px;margin-top:5px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:#07101d}
+.podium-item.first .bar{height:48px;background:linear-gradient(#fde68a,#d69e18)}
+.podium-item.second .bar{height:34px;background:linear-gradient(#dbeafe,#8299b8)}
+.podium-item.third .bar{height:26px;background:linear-gradient(#fdba74,#b96c2d)}
+.rest{border-top:1px solid var(--line);padding-top:6px;display:grid;gap:5px}
+.rankrow{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#d4deed}
+.rankrow span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{font-size:11px;color:var(--muted);text-align:center;padding:10px 0}
+.controls{display:grid;gap:9px}
+.controls h3{margin:0;font-size:13px}
+.row{display:flex;gap:7px;flex-wrap:wrap}
+input{width:100%;min-width:0;background:#081222;color:var(--text);border:1px solid #31435f;border-radius:9px;padding:11px;font-size:14px;outline:none}
+input:focus{border-color:var(--blue)}
+button{border:0;border-radius:9px;padding:10px 12px;font-weight:800;font-size:12px;background:#243650;color:white;cursor:pointer}
+button:active{transform:scale(.98)}button.primary{background:#087f5b}button.danger{background:#9f2942}button.gold{background:#946b0d}button.blue{background:#245a9a}button:disabled{opacity:.4}
+.note{font-size:11px;color:var(--muted);line-height:1.45}
+.queue{font-size:11px;color:var(--muted)}
+.eventlog{max-height:130px;overflow:auto;display:flex;flex-direction:column;gap:5px;font-size:11px;color:#c4d1e5}
+.eventlog div{border-left:2px solid #405777;padding-left:7px}
+@media(max-width:760px){
+ .app{padding:8px;gap:8px}.main{grid-template-columns:1fr}.side{grid-template-columns:1fr 1fr;gap:8px}
+ .hud{grid-template-columns:repeat(2,1fr);gap:5px}.stat{padding:8px 6px}.stat small{font-size:8px;letter-spacing:.5px}.stat strong{font-size:20px}.score-card{padding:10px 6px}.score-card small{font-size:10px}.score-card strong{font-size:30px}
+ .panel{padding:8px}.panel h3{font-size:11px}.podium-item .name{font-size:9px}.podium-item .medal{font-size:18px}
+}
+@media(max-width:390px){.side{grid-template-columns:1fr}.stat strong{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">CHAT <span>SNAKE</span></div>
+  <div class="status" id="connectionStatus">MODO DE TESTE · CHAT SIMULADO</div>
+</header>
+
+<section class="hud">
+  <div class="stat level"><small>NÍVEL</small><strong id="level">1/30</strong></div>
+  <div class="stat"><small>MAÇÃS NA FILA</small><strong id="queueCount">0</strong></div>
+</section>
+
+<div class="main">
+  <section class="game-wrap">
+    <div class="game-top">
+      <strong>CAMPO DE JOGO</strong>
+      <span id="stateLabel">PARTIDA EM ANDAMENTO</span>
+    </div>
+    <div class="canvas-box">
+      <canvas id="game" width="600" height="600"></canvas>
+      <div class="overlay" id="overlay">
+        <div class="overlay-card">
+          <h2 id="overlayTitle">VITÓRIA?</h2>
+          <p id="overlayText">Aguarde a confirmação.</p>
+          <div class="countdown" id="countdown">15</div>
+          <p id="overlayHint"></p>
+        </div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:8px">A cobrinha procura automaticamente a próxima maçã. Cada comentário válido adiciona uma maçã à fila.</div>
+  </section>
+
+  <aside class="side">
+    <section class="scoreboard" aria-label="Placar geral">
+      <div class="score-card win"><small><span class="score-icon">🏆</span> WIN</small><strong id="wins">0</strong></div>
+      <div class="score-card loss"><small><span class="score-icon">💀</span> DERROTA</small><strong id="losses">0</strong></div>
+    </section>
+    <section class="panel help">
+      <h3>🏆 MAIS AJUDARAM · TOP 5</h3>
+      <div id="helpRanking"></div>
+    </section>
+    <section class="panel harm">
+      <h3>💀 MAIS ATRAPALHARAM · TOP 5</h3>
+      <div id="harmRanking"></div>
+    </section>
+  </aside>
+</div>
+
+<section class="controls">
+  <h3>SIMULADOR DE CHAT</h3>
+  <input id="viewerName" maxlength="30" placeholder="Nome do espectador (ex.: Ronaldo)">
+  <div class="row">
+    <button class="primary" id="commentBtn">Enviar comentário / criar maçã</button>
+    <button class="blue" id="reviveBtn">Enviar !REVIVER</button>
+  </div>
+  <div class="note">No modo conectado, o nome será recebido automaticamente do autor da mensagem no chat do YouTube. O campo manual serve apenas para simulação.</div>
+  <div class="queue" id="lastViewer">Último espectador recebido: aguardando comentário</div>
+  <div class="queue" id="queueInfo">Fila de maçãs: vazia</div>
+</section>
+
+<section class="controls">
+  <h3>FERRAMENTAS DE TESTE (ADMIN)</h3>
+  <div class="row">
+    <button class="gold" id="penaltyBtn">Penalidade: -1 nível</button>
+    <button class="danger" id="killBtn">Simular morte</button>
+    <button id="resetBtn">Reiniciar agora</button>
+    <button class="blue" id="soundBtn">Som: ativar</button>
+  </div>
+  <div class="note">Toque em “Som: ativar” para liberar o áudio e ouvir um sinal de teste. Depois, os sons acompanham os movimentos e as maçãs. As ferramentas de teste simulam eventos para validar o funcionamento. Elas não representam ainda eventos reais do YouTube.</div>
+</section>
+
+<section class="controls">
+  <h3>REGISTRO DE EVENTOS</h3>
+  <div class="eventlog" id="eventLog"><div>Jogo iniciado. Aguardando comentários...</div></div>
+</section>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+// ================= CONFIGURAÇÃO DO JOGO =================
+const COLS = 30;
+const ROWS = 30;
+const CELL = 20;
+const MAX_LEVEL = 30;
+const VICTORY_SECONDS = 15;
+const RESCUE_SECONDS = 15;
+const AUTO_RESTART_SECONDS = 5;
+const BASE_STEP_MS = 150; // menor = cobrinha mais rápida
+const MIN_STEP_MS = 65;
+
+// ================= ELEMENTOS =================
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const $ = id => document.getElementById(id);
+const winsEl = $("wins"), lossesEl = $("losses"), levelEl = $("level");
+const queueCountEl = $("queueCount"), queueInfoEl = $("queueInfo");
+const overlay = $("overlay"), overlayTitle = $("overlayTitle");
+const overlayText = $("overlayText"), countdownEl = $("countdown");
+const overlayHint = $("overlayHint"), stateLabel = $("stateLabel");
+const helpRankingEl = $("helpRanking"), harmRankingEl = $("harmRanking");
+const eventLogEl = $("eventLog");
+
+const STORAGE_KEY = "chatSnakePersistentScore_v1";
+let persistent = { wins: 0, losses: 0 };
+try {
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  persistent.wins = Math.max(0, Number(saved.wins) || 0);
+  persistent.losses = Math.max(0, Number(saved.losses) || 0);
+} catch (_) {}
+
+const STATE = {
+  PLAYING: "PLAYING",
+  VICTORY_PENDING: "VICTORY_PENDING",
+  DEATH_PENDING: "DEATH_PENDING",
+  GAME_OVER: "GAME_OVER"
+};
+let state = STATE.PLAYING;
+let level = 1;
+let snake = [];
+let direction = {x:1,y:0};
+let appleQueue = [];
+let activeApple = null;
+let helpScores = new Map();
+let harmScores = new Map();
+let stateDeadline = 0;
+let lastFrame = 0;
+let accumulator = 0;
+let animationId = 0;
+let gameNumber = 1;
+let runToken = 0;
+let autoRestartDeadline = 0;
+let audioContext = null;
+let soundEnabled = true; // Áudio habilitado por padrão; o navegador libera após o primeiro toque.
+let audioReady = false;
+let lastCountdownValue = null;
+let lastCountdownState = null;
+
+// ================= UTILITÁRIOS =================
+const key = p => `${p.x},${p.y}`;
+const same = (a,b) => a.x === b.x && a.y === b.y;
+const inside = p => p.x >= 0 && p.x < COLS && p.y >= 0 && p.y < ROWS;
+const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
+const now = () => performance.now();
+function savePersistent() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(persistent)); } catch (_) {}
+}
+function setLastViewer(name) {
+  const el = $("lastViewer");
+  if (el) el.textContent = `Último espectador recebido: ${name}`;
+}
+function updateSoundButton() {
+  const btn = $("soundBtn");
+  if (btn) btn.textContent = soundEnabled ? (audioReady ? "🔊 Som ligado" : "🔊 Som ligado · toque na tela") : "🔇 Som desligado";
+}
+async function unlockAudio() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) throw new Error("Web Audio API indisponível neste navegador.");
+    if (!audioContext) {
+      audioContext = new AudioCtx();
+      audioContext.onstatechange = () => {
+        audioReady = audioContext.state === "running";
+        updateSoundButton();
+      };
+    }
+    if (audioContext.state !== "running") await audioContext.resume();
+    audioReady = audioContext.state === "running";
+    updateSoundButton();
+    return audioReady;
+  } catch (error) {
+    audioReady = false;
+    updateSoundButton();
+    log("Não foi possível ativar o áudio: " + (error && error.message ? error.message : "erro do navegador"));
+    return false;
+  }
+}
+function tone(freq, duration, type="sine", volume=0.075, delay=0) {
+  if (!soundEnabled || !audioContext || audioContext.state !== "running") return;
+  const start = audioContext.currentTime + delay;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002,volume), start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.025);
+}
+function playMoveSound() {
+  // Pulso mais audível, curto e repetido a cada passo da cobrinha.
+  tone(220, 0.075, "triangle", 0.065);
+}
+function playAppleSound() {
+  // Som de recompensa ao comer a maçã.
+  tone(587.33, 0.13, "sine", 0.10, 0);
+  tone(739.99, 0.14, "sine", 0.10, 0.11);
+  tone(880.00, 0.22, "sine", 0.11, 0.23);
+}
+function playAppleAppearSound() {
+  // Toque curto e brilhante quando uma nova maçã surge no tabuleiro.
+  tone(1046.50, 0.075, "sine", 0.075, 0);
+  tone(1318.51, 0.11, "sine", 0.085, 0.075);
+}
+function playWinSound() {
+  // Pequena fanfarra ascendente de vitória.
+  tone(523.25, 0.16, "triangle", 0.10, 0);
+  tone(659.25, 0.16, "triangle", 0.10, 0.15);
+  tone(783.99, 0.16, "triangle", 0.11, 0.30);
+  tone(1046.50, 0.42, "sine", 0.12, 0.46);
+}
+function playLossSound() {
+  // Sequência descendente, mais grave, para sinalizar derrota.
+  tone(493.88, 0.22, "triangle", 0.10, 0);
+  tone(392.00, 0.24, "triangle", 0.10, 0.21);
+  tone(293.66, 0.42, "sine", 0.11, 0.44);
+}
+function playStartSound() {
+  // Sinal de início de partida.
+  tone(392.00, 0.10, "triangle", 0.075, 0);
+  tone(523.25, 0.12, "triangle", 0.085, 0.10);
+  tone(659.25, 0.20, "sine", 0.095, 0.22);
+}
+function playDeathSound() {
+  // Impacto grave ao morrer, diferente do som de derrota definitiva.
+  tone(220.00, 0.18, "sawtooth", 0.09, 0);
+  tone(164.81, 0.34, "triangle", 0.11, 0.16);
+}
+function playRescueSound() {
+  // Som positivo e rápido ao conseguir reviver.
+  tone(659.25, 0.10, "sine", 0.085, 0);
+  tone(880.00, 0.13, "sine", 0.095, 0.10);
+  tone(1174.66, 0.20, "triangle", 0.10, 0.22);
+}
+function playPenaltySound() {
+  tone(330.00, 0.12, "square", 0.055, 0);
+  tone(246.94, 0.18, "triangle", 0.075, 0.11);
+}
+function playChatEventSound() {
+  tone(784.00, 0.055, "sine", 0.045, 0);
+}
+function playCountdownTick(remaining, stateName) {
+  if (stateName === STATE.VICTORY_PENDING) {
+    tone(880.00, 0.07, "sine", 0.075, 0);
+  } else if (stateName === STATE.DEATH_PENDING) {
+    tone(440.00, 0.085, "triangle", 0.085, 0);
+  } else {
+    tone(660.00, 0.06, "sine", 0.065, 0);
+  }
+  if (remaining === 1 && stateName === STATE.VICTORY_PENDING) tone(1174.66, 0.16, "sine", 0.10, 0.09);
+  if (remaining === 1 && stateName === STATE.DEATH_PENDING) tone(196.00, 0.22, "triangle", 0.10, 0.09);
+}
+function updateCountdownSound(remaining, stateName) {
+  if (remaining !== lastCountdownValue || stateName !== lastCountdownState) {
+    lastCountdownValue = remaining;
+    lastCountdownState = stateName;
+    playCountdownTick(remaining, stateName);
+  }
+}
+function log(message) {
+  const line = document.createElement("div");
+  line.textContent = message;
+  eventLogEl.prepend(line);
+  while (eventLogEl.children.length > 35) eventLogEl.removeChild(eventLogEl.lastChild);
+}
+function normalizeName(name) {
+  let n = String(name || "").trim().replace(/\s+/g," ").slice(0,30);
+  if (!n) n = "espectador";
+  return n.startsWith("@") ? n : "@" + n.replace(/^@+/,"");
+}
+function currentStepMs() {
+  return clamp(BASE_STEP_MS - (level-1)*2.5, MIN_STEP_MS, BASE_STEP_MS);
+}
+function setState(next) {
+  state = next;
+  lastCountdownValue = null;
+  lastCountdownState = null;
+  updateStateLabel();
+}
+function updateStateLabel() {
+  const labels = {
+    PLAYING: "PARTIDA EM ANDAMENTO",
+    VICTORY_PENDING: "CONFIRMANDO VITÓRIA",
+    DEATH_PENDING: "AGUARDANDO RESGATE",
+    GAME_OVER: "DERROTA"
+  };
+  stateLabel.textContent = labels[state] || state;
+}
+function updateHUD() {
+  winsEl.textContent = persistent.wins;
+  lossesEl.textContent = persistent.losses;
+  levelEl.textContent = `${level}/${MAX_LEVEL}`;
+  queueCountEl.textContent = appleQueue.length + (activeApple ? 1 : 0);
+  queueInfoEl.textContent = activeApple
+    ? `Maçã atual: ${activeApple.name} · Próximas na fila: ${appleQueue.length}`
+    : `Fila de maçãs: ${appleQueue.length ? appleQueue.length + " aguardando" : "vazia"}`;
+}
+function showOverlay(title, text, hint) {
+  overlayTitle.textContent = title;
+  overlayText.textContent = text;
+  overlayHint.textContent = hint || "";
+  overlay.classList.add("show");
+}
+function hideOverlay() { overlay.classList.remove("show"); }
+function updateCountdown() {
+  if (state !== STATE.VICTORY_PENDING && state !== STATE.DEATH_PENDING) return;
+  const remaining = Math.max(0, (stateDeadline - now()) / 1000);
+  const shown = Math.ceil(remaining);
+  countdownEl.textContent = shown;
+  updateCountdownSound(shown, state);
+}
+function addScore(map, name, points) {
+  if (!name || points <= 0) return;
+  map.set(name, (map.get(name) || 0) + points);
+  renderRankings();
+}
+function rankEntries(map) {
+  return [...map.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0],"pt-BR")).slice(0,5);
+}
+function renderOneRanking(target, map, kind) {
+  const entries = rankEntries(map);
+  if (!entries.length) {
+    target.innerHTML = '<div class="empty">Aguardando participantes...</div>';
+    return;
+  }
+  const podiumOrder = [1,0,2].filter(i => entries[i]);
+  const medals = {0:"🥇",1:"🥈",2:"🥉"};
+  const classes = {0:"first",1:"second",2:"third"};
+  const podium = document.createElement("div");
+  podium.className = "podium";
+  podiumOrder.forEach(index => {
+    const [name,score] = entries[index];
+    const item = document.createElement("div");
+    item.className = `podium-item ${classes[index]}`;
+    const medal = document.createElement("div"); medal.className="medal"; medal.textContent=medals[index];
+    const nm = document.createElement("div"); nm.className="name"; nm.textContent=name;
+    const bar = document.createElement("div"); bar.className="bar"; bar.textContent=score;
+    item.append(medal,nm,bar); podium.append(item);
+  });
+  const rest = document.createElement("div"); rest.className="rest";
+  entries.forEach(([name,score],i) => {
+    if (i < 3) return;
+    const row = document.createElement("div"); row.className="rankrow";
+    const n = document.createElement("span"); n.textContent=`${i+1}º ${name}`;
+    const s = document.createElement("strong"); s.textContent=score;
+    row.append(n,s); rest.append(row);
+  });
+  target.replaceChildren(podium);
+  if (rest.children.length) target.append(rest);
+}
+function renderRankings() {
+  renderOneRanking(helpRankingEl,helpScores,"help");
+  renderOneRanking(harmRankingEl,harmScores,"harm");
+}
+
+// ================= TABULEIRO E CAMINHO =================
+function occupiedSet(ignoreTail = false) {
+  const body = ignoreTail ? snake.slice(0,-1) : snake;
+  return new Set(body.map(key));
+}
+function randomFreeCell() {
+  const occupied = new Set(snake.map(key));
+  if (activeApple) occupied.add(key(activeApple));
+  for (const a of appleQueue) if (a.pos) occupied.add(key(a.pos));
+  const free = [];
+  for (let y=0;y<ROWS;y++) for (let x=0;x<COLS;x++) {
+    const p={x,y}; if (!occupied.has(key(p))) free.push(p);
+  }
+  if (!free.length) return null;
+  return free[Math.floor(Math.random()*free.length)];
+}
+function placeNextApple() {
+  if (activeApple || !appleQueue.length) return;
+  const pos = randomFreeCell();
+  if (!pos) return;
+  const next = appleQueue.shift();
+  activeApple = {name:next.name,pos};
+  playAppleAppearSound();
+  updateHUD();
+}
+function enqueueApple(name) {
+  setLastViewer(name);
+  appleQueue.push({name, pos:null});
+  placeNextApple();
+  updateHUD();
+}
+function bfsNextStep(start, goal) {
+  if (!goal) return null;
+  const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+  const body = occupiedSet(true); // a cauda pode liberar a célula no próximo passo
+  body.delete(key(start));
+  const q=[start], came=new Map();
+  came.set(key(start),null);
+  let found=false;
+  while(q.length) {
+    const p=q.shift();
+    if (same(p,goal)) { found=true; break; }
+    for(const d of dirs) {
+      const n={x:p.x+d.x,y:p.y+d.y}, k=key(n);
+      if(!inside(n) || came.has(k) || (body.has(k) && !same(n,goal))) continue;
+      came.set(k,key(p)); q.push(n);
+    }
+  }
+  if(!found) return null;
+  let cur=key(goal), prev=came.get(cur);
+  if(prev===null) return null;
+  while(prev && prev!==key(start)) { cur=prev; prev=came.get(cur); }
+  const [x,y]=cur.split(",").map(Number);
+  return {x,y};
+}
+function safeFallbackStep() {
+  const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+  const head=snake[0], tail=snake[snake.length-1];
+  for(const d of dirs) {
+    const n={x:head.x+d.x,y:head.y+d.y};
+    if(!inside(n)) continue;
+    if(snake.some((p,i)=>same(p,n) && i!==snake.length-1)) continue;
+    return n;
+  }
+  return null;
+}
+function trimSnakeToLevel() {
+  const wanted = level + 2;
+  if (snake.length > wanted) snake = snake.slice(0,wanted);
+}
+function growSnake() {
+  const tail=snake[snake.length-1];
+  snake.push({...tail});
+}
+function moveSnake() {
+  if (state !== STATE.PLAYING || !snake.length) return;
+  placeNextApple();
+  const head=snake[0];
+  let next = activeApple ? bfsNextStep(head,activeApple.pos) : null;
+  if(!next) next=safeFallbackStep();
+  if(!next) { die("A cobrinha ficou sem movimento seguro."); return; }
+  if(!inside(next)) { die("A cobrinha atingiu a borda."); return; }
+  const eating = activeApple && same(next,activeApple.pos);
+  const collisionBody = eating ? snake : snake.slice(0,-1);
+  if(collisionBody.some(p=>same(p,next))) { die("A cobrinha colidiu com o próprio corpo."); return; }
+
+  snake.unshift(next);
+  playMoveSound();
+  if(eating) {
+    const eaten = activeApple;
+    playAppleSound();
+    activeApple = null;
+    level = Math.min(MAX_LEVEL, level+1);
+    growSnake();
+    addScore(helpScores,eaten.name,1);
+    log(`${eaten.name} ajudou: maçã comida (+1 nível).`);
+    if(level >= MAX_LEVEL) beginVictoryCountdown();
+    else placeNextApple();
+  } else {
+    snake.pop();
+  }
+  updateHUD();
+}
+
+// ================= EVENTOS E REGRAS =================
+function beginVictoryCountdown() {
+  if(state !== STATE.PLAYING) return;
+  setState(STATE.VICTORY_PENDING);
+  stateDeadline = now() + VICTORY_SECONDS*1000;
+  showOverlay("NÍVEL 30!", "A cobrinha chegou ao nível máximo.", "Sobreviva por 15 segundos para confirmar a vitória.");
+  tone(783.99, 0.12, "triangle", 0.09, 0);
+  tone(987.77, 0.18, "sine", 0.10, 0.13);
+  countdownEl.textContent = VICTORY_SECONDS;
+  log("Nível 30 alcançado. Iniciada confirmação de vitória por 15 segundos.");
+}
+function cancelVictory(reason) {
+  if(state !== STATE.VICTORY_PENDING) return;
+  setState(STATE.PLAYING);
+  stateDeadline = 0;
+  hideOverlay();
+  playPenaltySound();
+  log(`Vitória cancelada: ${reason}. A partida continua no nível ${level}.`);
+}
+function confirmVictory() {
+  if(state !== STATE.VICTORY_PENDING) return;
+  persistent.wins++;
+  savePersistent();
+  updateHUD();
+  log("VITÓRIA CONFIRMADA! WIN +1.");
+  finishRound("WIN");
+}
+function applyPenalty(name, amount=1, fatalBonus=false) {
+  name = normalizeName(name);
+  if(state === STATE.DEATH_PENDING || state === STATE.GAME_OVER) {
+    log(`${name}: penalidade ignorada porque a cobrinha está fora de jogo.`);
+    return;
+  }
+  const before = level;
+  level = Math.max(1, level - Math.max(1,Math.floor(amount)));
+  const lost = before-level;
+  playPenaltySound();
+  if(lost > 0) addScore(harmScores,name,lost);
+  if(fatalBonus) addScore(harmScores,name,5);
+  trimSnakeToLevel();
+  updateHUD();
+  log(`${name} atrapalhou: -${lost} nível(is).`);
+  if(state === STATE.VICTORY_PENDING && level < MAX_LEVEL) cancelVictory("a cobrinha perdeu nível");
+  // Penalidades não matam automaticamente no nível 1; morte é um evento separado.
+}
+function die(reason="A cobrinha morreu.") {
+  if(state === STATE.DEATH_PENDING || state === STATE.GAME_OVER) return;
+  setState(STATE.DEATH_PENDING);
+  playDeathSound();
+  stateDeadline = now() + RESCUE_SECONDS*1000;
+  showOverlay("A COBRINHA MORREU!", reason, "Envie !REVIVER no chat antes que o tempo acabe.");
+  countdownEl.textContent = RESCUE_SECONDS;
+  log(`${reason} Prazo de resgate iniciado: 15 segundos.`);
+}
+function revive(name) {
+  name = normalizeName(name);
+  setLastViewer(name);
+  if(state !== STATE.DEATH_PENDING) {
+    playChatEventSound();
+    log(`${name} enviou !REVIVER, mas não há resgate ativo.`);
+    return false;
+  }
+  const remaining = Math.max(0,stateDeadline-now());
+  if(remaining <= 0) return false;
+  const oldLevel = level;
+  level = Math.max(1,oldLevel-3);
+  const newLength = level+2;
+  // Reposiciona a cobrinha no centro, preservando uma forma segura.
+  const cx=Math.floor(COLS/2), cy=Math.floor(ROWS/2);
+  snake=[];
+  for(let i=0;i<newLength;i++) snake.push({x:cx-i,y:cy});
+  direction={x:1,y:0};
+  // Maçã em trânsito é recolocada na fila; comentários da fila são mantidos.
+  if(activeApple) { appleQueue.unshift({name:activeApple.name,pos:null}); activeApple=null; }
+  stateDeadline=0;
+  setState(STATE.PLAYING);
+  hideOverlay();
+  addScore(helpScores,name,5);
+  playRescueSound();
+  log(`${name} SALVOU A COBRINHA! Renascimento no nível ${level} (morreu no nível ${oldLevel}).`);
+  placeNextApple();
+  updateHUD();
+  return true;
+}
+function finishRound(result) {
+  if(result === "WIN") playWinSound();
+  else playLossSound();
+  runToken++;
+  stateDeadline=0;
+  setState(STATE.GAME_OVER);
+  autoRestartDeadline = now() + AUTO_RESTART_SECONDS*1000;
+  // Os rankings da partida encerrada continuam visíveis durante a tela de resultado.
+  log(result==="WIN" ? "Partida encerrada com vitória." : "Partida encerrada com derrota.");
+  showOverlay(result==="WIN" ? "VITÓRIA!" : "DERROTA!", result==="WIN" ? "A partida foi vencida." : "Ninguém resgatou a cobrinha.", "Próxima partida iniciando automaticamente em:");
+  countdownEl.textContent = AUTO_RESTART_SECONDS;
+  $("resetBtn").textContent="Reiniciar agora";
+}
+function startNewRound() {
+  runToken++;
+  level=1;
+  snake=[{x:14,y:15},{x:13,y:15},{x:12,y:15}];
+  direction={x:1,y:0};
+  appleQueue=[];
+  activeApple=null;
+  helpScores=new Map();
+  harmScores=new Map();
+  stateDeadline=0;
+  autoRestartDeadline=0;
+  accumulator=0;
+  setState(STATE.PLAYING);
+  hideOverlay();
+  renderRankings();
+  updateHUD();
+  log(`PARTIDA ${gameNumber} iniciada. Rankings zerados.`);
+  playStartSound();
+  gameNumber++;
+}
+function processTimers() {
+  if(state===STATE.VICTORY_PENDING) {
+    updateCountdown();
+    if(now()>=stateDeadline) confirmVictory();
+  } else if(state===STATE.DEATH_PENDING) {
+    updateCountdown();
+    if(now()>=stateDeadline) {
+      persistent.losses++;
+      savePersistent();
+      updateHUD();
+      log("Tempo esgotado. DERROTA +1.");
+      finishRound("LOSS");
+    }
+  } else if(state===STATE.GAME_OVER) {
+    const remaining = Math.max(0,(autoRestartDeadline-now())/1000);
+    const shown = Math.ceil(remaining);
+    countdownEl.textContent = shown;
+    updateCountdownSound(shown, STATE.GAME_OVER);
+    if(now()>=autoRestartDeadline) startNewRound();
+  }
+}
+
+// ================= DESENHO =================
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#07101d"; ctx.fillRect(0,0,600,600);
+  ctx.strokeStyle="rgba(90,120,160,.12)"; ctx.lineWidth=1;
+  for(let x=0;x<=600;x+=CELL){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,600);ctx.stroke();}
+  for(let y=0;y<=600;y+=CELL){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(600,y);ctx.stroke();}
+
+  // Maçã e identificação do espectador
+  if(activeApple) {
+    const cx=activeApple.pos.x*CELL+CELL/2, cy=activeApple.pos.y*CELL+CELL/2;
+    ctx.save();
+    ctx.shadowColor="#fb4b5f";ctx.shadowBlur=18;
+    ctx.fillStyle="#ef4444";ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;ctx.strokeStyle="#86efac";ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(cx,cy-7);ctx.quadraticCurveTo(cx+2,cy-14,cx+7,cy-12);ctx.stroke();
+    ctx.restore();
+    ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle="#ffd6dc";
+    ctx.fillText(activeApple.name,cx,cy-13);
+  }
+
+  // Corpo
+  snake.forEach((p,i)=>{
+    const pad=i===0?2:3;
+    const x=p.x*CELL+pad,y=p.y*CELL+pad,s=CELL-pad*2;
+    ctx.fillStyle=i===0?"#a7f3d0":`hsl(${153-i*1.2},65%,${48-Math.min(i,20)*.45}%)`;
+    ctx.beginPath();ctx.roundRect(x,y,s,s,5);ctx.fill();
+    if(i===0){
+      ctx.fillStyle="#052e2b";
+      ctx.beginPath();ctx.arc(x+5,y+5,1.8,0,Math.PI*2);ctx.arc(x+s-5,y+5,1.8,0,Math.PI*2);ctx.fill();
+    }
+  });
+  // Identificação do nível acompanha a cabeça da cobrinha.
+  if (snake.length) {
+    const head = snake[0];
+    const label = "NÍVEL " + level;
+    ctx.save();
+    ctx.font = "900 11px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const textWidth = ctx.measureText(label).width;
+    const badgeWidth = textWidth + 16;
+    const badgeHeight = 18;
+    const badgeX = head.x * CELL + CELL / 2 - badgeWidth / 2;
+    const badgeY = Math.max(2, head.y * CELL - badgeHeight - 5);
+    ctx.shadowColor = "#000";
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = "#06251f";
+    ctx.strokeStyle = "#34d399";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#a7f3d0";
+    ctx.fillText(label, head.x * CELL + CELL / 2, badgeY + badgeHeight / 2 + 0.5);
+    ctx.restore();
+  }
+}
+
+// ================= LOOP =================
+function frame(timestamp) {
+  if(!lastFrame) lastFrame=timestamp;
+  const dt=Math.min(100,timestamp-lastFrame);
+  lastFrame=timestamp;
+  processTimers();
+  if(state===STATE.PLAYING) {
+    accumulator+=dt;
+    const step=currentStepMs();
+    let safety=0;
+    while(accumulator>=step && safety<5 && state===STATE.PLAYING) {
+      moveSnake(); accumulator-=step; safety++;
+    }
+  }
+  draw();
+  animationId=requestAnimationFrame(frame);
+}
+
+// ================= INTERFACE / EVENTOS DE TESTE =================
+function getViewer() { return normalizeName($("viewerName").value); }
+$("commentBtn").addEventListener("click",()=>{
+  const name=getViewer();
+  enqueueApple(name);
+  playChatEventSound();
+  log(`${name} comentou: uma maçã entrou na fila.`);
+  $("viewerName").value="";
+});
+$("reviveBtn").addEventListener("click",()=>{
+  const name=getViewer();
+  if(revive(name)) $("viewerName").value="";
+});
+$("penaltyBtn").addEventListener("click",()=>{
+  applyPenalty(getViewer(),1,false);
+});
+$("killBtn").addEventListener("click",()=>{
+  // Evento fatal de teste atribuído ao nome digitado.
+  const name=getViewer();
+  addScore(harmScores,name,5);
+  die(`Evento de teste atribuído a ${name}.`);
+});
+$("resetBtn").addEventListener("click",()=>{
+  startNewRound();
+});
+$("soundBtn").addEventListener("click", async () => {
+  if (!soundEnabled) {
+    soundEnabled = true;
+    const ready = await unlockAudio();
+    if (ready) { tone(880, 0.24, "sine", 0.12); log("Áudio ativado."); }
+  } else if (!audioReady) {
+    // Primeiro toque no botão libera o áudio sem desligá-lo.
+    const ready = await unlockAudio();
+    if (ready) { tone(880, 0.24, "sine", 0.12); log("Áudio liberado e ligado."); }
+  } else {
+    soundEnabled = false;
+    updateSoundButton();
+    log("Efeitos sonoros desligados.");
+  }
+  updateSoundButton();
+});
+// O som já fica habilitado ao abrir o jogo. Chrome/Android exige um gesto
+// do usuário para liberar o AudioContext; o primeiro toque em qualquer área
+// (exceto no botão de som) desbloqueia o áudio sem exigir ativação manual.
+let audioGestureHandled = false;
+async function unlockOnFirstGesture(event) {
+  if (audioGestureHandled || !soundEnabled) return;
+  if (event && event.target && event.target.closest && event.target.closest("#soundBtn")) return;
+  audioGestureHandled = true;
+  const ready = await unlockAudio();
+  if (ready) {
+    playStartSound();
+    log("Áudio liberado automaticamente pelo primeiro toque.");
+  }
+  document.removeEventListener("pointerdown", unlockOnFirstGesture, true);
+  document.removeEventListener("keydown", unlockOnFirstGesture, true);
+}
+document.addEventListener("pointerdown", unlockOnFirstGesture, true);
+document.addEventListener("keydown", unlockOnFirstGesture, true);
+$("viewerName").addEventListener("keydown",e=>{
+  if(e.key==="Enter") $("commentBtn").click();
+});
+
+// API pública para conectar o chat real na próxima etapa.
+// Exemplo: window.ChatSnake.onComment("Nome", "texto")
+window.ChatSnake = {
+  onComment(author, message) {
+    const name=normalizeName(author);
+    const text=String(message||"");
+    if(text.trim().toUpperCase()==="!REVIVER") return revive(name);
+    enqueueApple(name);
+    playChatEventSound();
+    log(`${name} comentou no chat.`);
+    return true;
+  },
+  onPenalty(author, levels=1) { applyPenalty(author,levels,false); },
+  onFatalEvent(author) {
+    const name=normalizeName(author);
+    addScore(harmScores,name,5);
+    die(`Evento fatal atribuído a ${name}.`);
+  },
+  onRescue(author) { return revive(author); },
+  enableAudio() { unlockAudio(); },
+  getStatus() {
+    return {
+      state, level, wins:persistent.wins, losses:persistent.losses,
+      queuedApples:appleQueue.length+(activeApple?1:0),
+      helpers:rankEntries(helpScores), troublemakers:rankEntries(harmScores)
+    };
+  }
+};
+
+// Inicialização
+startNewRound();
+updateHUD();
+renderRankings();
+updateSoundButton();
+animationId=requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
